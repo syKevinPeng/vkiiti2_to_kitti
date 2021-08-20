@@ -35,8 +35,10 @@ if __name__ == "__main__":
             df_bbox.drop(0, axis=0, inplace=True)
             df_pose.drop(0, axis=0, inplace=True)
             # get current frame
-            current_frame_bbox = df_bbox.loc[(df_bbox['frame'] == frame) & (df_bbox['cameraID'] == cam_id)]
-            current_frame_pose = df_pose.loc[(df_pose['frame'] == frame) & (df_pose['cameraID'] == cam_id)]
+            try:
+                current_frame_bbox = df_bbox.loc[(df_bbox['frame'] == frame) & (df_bbox['cameraID'] == cam_id)]
+                current_frame_pose = df_pose.loc[(df_pose['frame'] == frame) & (df_pose['cameraID'] == cam_id)]
+
             # get the portion that is useful for kitti
             kitti_bbox = current_frame_bbox[["truncation_ratio",
                                              "occupancy_ratio",
