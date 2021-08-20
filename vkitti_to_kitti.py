@@ -1,4 +1,4 @@
-import os, re
+import os, re, tqdm
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -6,16 +6,26 @@ VKITTI_DIR = os.path.join("D:/Study/FIRE/KITTI-Orientation/virtual_kitti")
 VKITTI_VER = "vkitti_2.0.3"
 BBOX_FILE_HEADER = "frame cameraID trackID left right top bottom number_pixels truncation_ratio occupancy_ratio isMoving"
 POSE_FILE_HEADER = "frame cameraID trackID alpha width height length world_space_X world_space_Y world_space_Z rotation_world_space_y rotation_world_space_x rotation_world_space_z camera_space_X camera_space_Y camera_space_Z rotation_camera_space_y rotation_camera_space_x rotation_camera_space_z"
+kitti_columns_name = [
+    "type",
+    "truncation_ratio",
+    "occupancy_ratio",
+    "alpha",
+    "left", "top", "right", "bottom",
+    "height", "width", "length",
+    "camera_space_X", "camera_space_Y", "camera_space_Z",
+    "rotation_camera_space_y"
+]
 
 # return a list of all vkitti full path of images
-def get_all_img_path(img_dir, shuffle = False, ):
+def get_all_img_path(img_dir, shuffle = False):
     # get all image path to img_list
     img_dir = [os.path.join(currentpath, file) for currentpath, _, files in os.walk(img_dir) for file in files ]
     if shuffle: np.random.shuffle(img_dir)
     return img_dir
 
-# get label take in a full image path as input and output kitti-like label
-def get_label(img_path:str, verbose = False):
+# get label take in a full image path as input and output kitti-like label in dataframe
+def get_label(img_path:str, label_dir:str, verbose = False):
     re_group = re.search(r'(Scene\d\d)\\(.+)\\frames.+(Camera_\d)\\rgb_(\d+.jpg)', img_path)
     scene_name, category, cam, img_id = re_group.groups()
     frame = str(int(img_id[:-4]))
@@ -48,20 +58,12 @@ def get_label(img_path:str, verbose = False):
     kitti_label = pd.concat([kitti_bbox, kitti_pose], axis=1)
     # add missing "type column"
     kitti_label['type'] = "Car"
-    kitti_columns_name = [
-        "type",
-        "truncation_ratio",
-        "occupancy_ratio",
-        "alpha",
-        "left", "top", "right", "bottom",
-        "height", "width", "length",
-        "camera_space_X", "camera_space_Y", "camera_space_Z",
-        "rotation_camera_space_y"
-    ]
     kitti_label = kitti_label.reindex(columns=kitti_columns_name)
 
     pd.set_option('display.max_colwidth', None)
     if verbose: print(kitti_label)
+    return kitti_label
+   
 
 if __name__ == "__main__":
     # construct directory and check validation
@@ -71,4 +73,5 @@ if __name__ == "__main__":
     if not os.path.isdir(label_dir): raise FileNotFoundError(f'{label_dir} cannot be found')
 
     img_list = get_all_img_path(img_dir, True)
-    get_label(img_list[1], verbose= True)
+    dataframe = get_label(img_list[1], label_dir=label_dir, verbose= True)
+
