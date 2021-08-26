@@ -9,6 +9,7 @@ VKITTI_VER = "vkitti_2.0.3"
 BBOX_FILE_HEADER = "frame cameraID trackID left right top bottom number_pixels truncation_ratio occupancy_ratio isMoving"
 POSE_FILE_HEADER = "frame cameraID trackID alpha width height length world_space_X world_space_Y world_space_Z rotation_world_space_y rotation_world_space_x rotation_world_space_z camera_space_X camera_space_Y camera_space_Z rotation_camera_space_y rotation_camera_space_x rotation_camera_space_z"
 INFO_FILE_HEADER = "trackID label model color"
+EXCLUDED_DIRECTORY = "15-deg-left 15-deg-right 30-deg-left 30-deg-right"
 KITTI_COLUMNS_NAME = [
     "type",
     "truncation_ratio",
@@ -24,14 +25,19 @@ KITTI_COLUMNS_NAME = [
 # return a list of all vkitti full path of images
 def get_all_img_path(img_dir, shuffle=False):
     # get all image path to img_list
-    img_dir = [os.path.join(currentpath, file) for currentpath, _, files in os.walk(img_dir) for file in files]
-    if shuffle: np.random.shuffle(img_dir)
-    return img_dir
+    img_path_list = []
+    for currentpath, dirs, files in os.walk(img_dir, topdown=True):
+        dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRECTORY.split()]
+        for file in files:
+            img_path_list.append(os.path.join(currentpath, file))
+    print(img_path_list)
+    if shuffle: np.random.shuffle(img_path_list)
+    return img_path_list
 
 
 
 # get label take in a full image path as input and output kitti-like label in dataframe
-def get_label(img_path: str, label_dir: str, verbose=False):
+def get_label_from_single_path(img_path: str, label_dir: str, verbose=False):
     re_group = re.search(r'(Scene\d\d)\\(.+)\\frames.+(Camera_\d)\\rgb_(\d+.jpg)', img_path)
     scene_name, category, cam, img_id = re_group.groups()
     frame = str(int(img_id[:-4]))
@@ -90,6 +96,8 @@ def get_label(img_path: str, label_dir: str, verbose=False):
     if verbose: print(kitti_label)
     return kitti_label
 
+def get_label_sequentially():
+    pass
 
 if __name__ == "__main__":
     # construct directory and check validation
@@ -99,6 +107,6 @@ if __name__ == "__main__":
     if not os.path.isdir(label_dir): raise FileNotFoundError(f'{label_dir} cannot be found')
 
     img_list = get_all_img_path(img_dir, True)
-    dataframe = get_label(img_list[1], label_dir=label_dir, verbose=True)
+    dataframe = get_label_from_single_path(img_list[1], label_dir=label_dir, verbose=True)
     if isinstance(dataframe, bool) and dataframe == False:
         print("No label provided")

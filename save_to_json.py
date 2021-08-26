@@ -15,14 +15,15 @@ VIEW_ANGLE_TOTAL_X = 1.4835298642
 VIEW_ANGLE_TOTAL_Y = 0.55850536064
 
 
-def store_all_object_to_json(label_dir, image_dir):
+def store_all_object_to_json(label_dir, image_dir, shuffle = False):
     # store all objects
-    all_objs = []
-    image_dir = get_all_img_path(image_dir, True)
+    all_objs = {}
+    image_dir = get_all_img_path(image_dir, shuffle)
 
-    for path_to_img in tqdm.tqdm(np.random.choice(image_dir, 5)):
-        df_label = get_label(path_to_img, label_dir=label_dir)
+    for path_to_img in tqdm.tqdm(np.random.choice(image_dir, 5000)):
+        df_label = get_label_from_single_path(path_to_img, label_dir=label_dir)
         if isinstance(df_label, bool) and df_label == False:
+            print(f'path {path_to_img} does not have a label. Skipped')
             continue
         objs = [{
             'image_file': path_to_img,
@@ -49,7 +50,7 @@ def store_all_object_to_json(label_dir, image_dir):
                         VIEW_ANGLE_TOTAL_X / 2)
         } for type, truncation_ratio, occupancy_ratio, alpha, left, top, right, bottom, height, width, length,
               camera_space_X, camera_space_Y, camera_space_Z, rotation_camera_space_y in df_label.to_numpy()]
-        all_objs.append(objs)
+        all_objs.update({path_to_img: objs})
 
         # dump everything to json
         with open('data.json', 'w') as f:
